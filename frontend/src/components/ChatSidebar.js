@@ -40,6 +40,7 @@ export default function ChatSidebar({ open, onClose, sendPrompt }) {
               "Billing question about an invoice",
               "Technical issue: app throws an error",
               "Policy question about privacy",
+              "Tell me a dad joke",
             ].map((q) => (
               <button
                 key={q}
