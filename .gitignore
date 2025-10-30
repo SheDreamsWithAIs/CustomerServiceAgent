@@ -6,6 +6,18 @@
 .env.*
 !.env.example
 
-# AI Documentation folder
-/AI_docs
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Chroma vector store
+/backend/.chroma/
+
+# Node / Next.js
+/frontend/node_modules/
+/frontend/.next/
+
+# OS and tooling
+.DS_Store
 
