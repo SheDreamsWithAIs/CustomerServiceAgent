@@ -1,0 +1,38 @@
+Title: OfficeLifeline Billing Policy (Sample)
+
+Plans
+- Basic: $0/month. Limited features; community support only.
+- Pro: $29.99/month. Full features; standard support.
+- Enterprise: Custom pricing. SLA and dedicated support available.
+
+Invoices & Payment
+- Billing cycle: Monthly on the signup day.
+- Invoice ID format: INV-<4 digits> (e.g., INV-1001).
+- Payment methods: Credit card; ACH (Enterprise only).
+
+Grace Period & Dunning
+- Grace period: 7 days after invoice due date.
+- Dunning: Reminder emails at day 1, 4, and 7 of delinquency.
+- Service limitation: Pro features paused after grace period until payment succeeds.
+
+Refunds & Cancellations
+- Pro-rated refunds: Not offered for monthly plans once the billing cycle starts.
+- Cancellations: Effective at the end of the current billing period.
+- Downgrades: Apply at the next billing cycle.
+
+Proration
+- Upgrades mid-cycle: Charged a proportional amount for remaining days in cycle.
+- Downgrades mid-cycle: Take effect next cycle; no mid-cycle credit.
+
+Taxes
+- Taxes may apply depending on jurisdiction; shown on the invoice when applicable.
+
+Disputes
+- Payment disputes: Contact support within 14 days of the invoice date with the invoice ID.
+
+Support Contacts
+- Billing inquiries: billing@officelifeline.example
+- General support: support@officelifeline.example
+
+Notes
+- Policy changes may occur; latest policy snapshot supersedes prior versions.

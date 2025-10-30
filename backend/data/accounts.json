@@ -1,0 +1,22 @@
+{
+  "accounts": [
+    {
+      "user_id": "user_123",
+      "email": "jess@example.com",
+      "plan": "Pro",
+      "balance_due": 29.99,
+      "currency": "USD",
+      "last_invoice_id": "INV-1001",
+      "open_tickets": 1
+    },
+    {
+      "user_id": "user_456",
+      "email": "alex@example.com",
+      "plan": "Basic",
+      "balance_due": 0.0,
+      "currency": "USD",
+      "last_invoice_id": "INV-1002",
+      "open_tickets": 0
+    }
+  ]
+}
