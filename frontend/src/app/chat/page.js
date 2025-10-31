@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import ChatHeader from "@/components/ChatHeader";
 import ChatSidebar from "@/components/ChatSidebar";
 import { chat as apiChat, chatStream } from "@/lib/api";
+import MarkdownMessage from "@/components/MarkdownMessage";
 
 // Visible personas (UI): brand assistant (default) and ESDJ (dad jokes)
 const AGENTS = {
@@ -197,7 +198,11 @@ export default function ChatPage() {
                     : "bg-white border-2 border-cyan-200 text-gray-900"
                 }`}
               >
-                <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
+                {message.sender === "ai" ? (
+                  <MarkdownMessage text={message.content} />
+                ) : (
+                  <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
+                )}
                 {message.timestamp ? (
                   <p className={`text-xs mt-3 ${message.sender === "user" ? "text-gray-300" : "text-gray-500"}`}>{message.timestamp}</p>
                 ) : null}
@@ -211,10 +216,10 @@ export default function ChatPage() {
             <div className="flex gap-3 justify-start">
               <AgentBadge agentType={streamingAgentType} />
               <div className="max-w-xs lg:max-w-md px-5 py-4 rounded-2xl bg-white border-2 border-cyan-200 text-gray-900 shadow-md">
-                <p className="text-sm whitespace-pre-line">
-                  {streamingMessage}
+                <div className="text-sm">
+                  <MarkdownMessage text={streamingMessage} />
                   <span className="animate-pulse">|</span>
-                </p>
+                </div>
               </div>
             </div>
           )}
