@@ -52,7 +52,10 @@ export async function chatStream({ message, userId, threadId, mode, onChunk }) {
       for (const line of text.split(/\r?\n/)) {
         const m = line.match(/^data:(.*)$/);
         if (m) {
-          const data = m[1];
+          // Trim exactly one leading space added after 'data:' in the backend emitter,
+          // but preserve intentional space characters from the stream.
+          const raw = m[1] ?? "";
+          const data = raw.startsWith(" ") ? raw.slice(1) : raw;
           if (data === "[DONE]") return;
           onChunk?.(data);
         }
