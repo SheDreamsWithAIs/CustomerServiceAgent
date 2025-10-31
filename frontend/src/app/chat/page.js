@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import ChatHeader from "@/components/ChatHeader";
 import ChatSidebar from "@/components/ChatSidebar";
+import { chat as apiChat, chatStream } from "@/lib/api";
 
 // Visible personas (UI): brand assistant (default) and ESDJ (dad jokes)
 const AGENTS = {
@@ -41,6 +42,8 @@ export default function ChatPage() {
   const [streamingMessage, setStreamingMessage] = useState("");
   const [streamingAgentType, setStreamingAgentType] = useState("brand");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [threadId] = useState(() => `web_${Date.now()}`);
+  const userId = "user_123"; // simple default for personalization
 
   const messagesEndRef = useRef(null);
 
@@ -63,50 +66,62 @@ export default function ChatPage() {
     setIsLoading(true);
     setStreamingMessage("");
 
-    const routedAgent = chooseAgentFor(message);
-    // Set streaming persona immediately so theming matches before text appears
-    setStreamingAgentType(getDisplayAgentType(routedAgent));
-    // ESDJ jokes (only visible special persona)
-    const dadJokes = [
-      "Why don't scientists trust atoms? Because they make up everything!",
-      "I told my wife she was drawing her eyebrows too high. She looked surprised.",
-      "What do you call a fake noodle? An impasta!",
-      "Why did the scarecrow win an award? He was outstanding in his field!",
-    ];
+    // Show a short placeholder while awaiting backend
+    setStreamingAgentType("brand");
+    setStreamingMessage("Working on it…");
 
-    let responseText = "";
-    if (routedAgent === "esdj") {
-      const randomJoke = dadJokes[Math.floor(Math.random() * dadJokes.length)];
-      responseText = `🚨 EMOTIONAL SUPPORT DAD JOKE ACTIVATED! 🚨\n\n${randomJoke}`;
-    } else {
-      responseText =
-        routedAgent === "billing"
-          ? "I’ll connect you with our Billing specialist. What invoice or charge should we look at?"
-          : routedAgent === "technical"
-          ? "I’ll bring in Technical Support. Can you share the error, steps, and environment?"
-          : routedAgent === "policy"
-          ? "I’ll route this to our Policy & Compliance agent. Which policy or section is in question?"
-          : "I’m analyzing your request and will route to the right agent. Could you add any relevant details?";
+    try {
+      // Stream tokens first for better UX
+      let streamed = "";
+      await chatStream({
+        message,
+        userId,
+        threadId,
+        onChunk: (ch) => {
+          streamed += ch;
+          setStreamingMessage(streamed);
+        },
+      });
+
+      // Fetch structured details after stream completes
+      const res = await apiChat({ message, userId, threadId });
+      let responseText = streamed || res?.message || "";
+
+      // Append structured billing details if present
+      if (res?.billing) {
+        const b = res.billing;
+        const lines = [];
+        if (b.plan) lines.push(`Plan: ${b.plan}`);
+        if (b.balance_due != null && b.currency) lines.push(`Balance: ${b.balance_due} ${b.currency}`);
+        if (b.last_invoice_id) lines.push(`Last Invoice: ${b.last_invoice_id}`);
+        if (b.open_tickets != null) lines.push(`Open Tickets: ${b.open_tickets}`);
+        if (b.policy_summary) lines.push(`Policy: ${b.policy_summary}`);
+        if (lines.length) responseText += `\n\n${lines.join("\n")}`;
+      }
+
+      const agentFromRoute = res?.route || "orchestrator";
+      const aiResponse = {
+        id: Date.now() + 1,
+        content: responseText,
+        sender: "ai",
+        timestamp: new Date().toLocaleTimeString(),
+        agentType: agentFromRoute === "tech_support" ? "technical" : agentFromRoute,
+      };
+
+      setMessages((prev) => [...prev, aiResponse]);
+    } catch (err) {
+      const aiResponse = {
+        id: Date.now() + 1,
+        content: `Error: ${err?.message || "Request failed"}`,
+        sender: "ai",
+        timestamp: new Date().toLocaleTimeString(),
+        agentType: "brand",
+      };
+      setMessages((prev) => [...prev, aiResponse]);
+    } finally {
+      setStreamingMessage("");
+      setIsLoading(false);
     }
-
-    for (let i = 0; i <= responseText.length; i++) {
-      setStreamingMessage(responseText.substring(0, i));
-      // Lightweight streaming simulation
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((resolve) => setTimeout(resolve, 15));
-    }
-
-    const aiResponse = {
-      id: Date.now() + 1,
-      content: responseText,
-      sender: "ai",
-      timestamp: new Date().toLocaleTimeString(),
-      agentType: routedAgent,
-    };
-
-    setMessages((prev) => [...prev, aiResponse]);
-    setStreamingMessage("");
-    setIsLoading(false);
   }
 
   function AgentBadge({ agentType }) {
@@ -202,9 +217,7 @@ export default function ChatPage() {
                 {isLoading ? "Thinking…" : "Send"}
               </button>
             </div>
-            <div className="mt-3 text-xs text-gray-500 text-center">
-              Press Enter to submit • Mock routing to Billing, Technical, or Policy
-            </div>
+            <div className="mt-3 text-xs text-gray-500 text-center">Press Enter to submit • Connected to backend API</div>
           </div>
         </div>
       </div>
