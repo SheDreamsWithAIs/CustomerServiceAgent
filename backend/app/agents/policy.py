@@ -12,6 +12,8 @@ import logging
 import os
 
 from langchain.agents import create_agent
+from langgraph.checkpoint.memory import InMemorySaver
+from app.middleware.common import get_default_middleware
 
 
 def _repo_root() -> Path:
@@ -49,18 +51,19 @@ def get_policy_agent():
         tools=[],
         system_prompt=system_prompt,
         name="policy_agent",
+        middleware=get_default_middleware(),
+        checkpointer=InMemorySaver(),
     )
     return agent
 
 
-def invoke_policy_agent(user_message: str) -> str:
+def invoke_policy_agent(user_message: str, thread_id: str | None = None) -> str:
     logger = logging.getLogger("app.agents.policy")
     agent = get_policy_agent()
-    result: Dict[str, Any] = agent.invoke({
-        "messages": [
-            {"role": "user", "content": user_message}
-        ]
-    })
+    result: Dict[str, Any] = agent.invoke(
+        {"messages": [{"role": "user", "content": user_message}]},
+        config={"configurable": {"thread_id": thread_id or "default"}},
+    )
     logger.debug("Policy agent result type=%s", type(result))
     if isinstance(result, dict) and "messages" in result:
         messages = result.get("messages", [])

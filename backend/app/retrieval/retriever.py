@@ -12,7 +12,8 @@ from pathlib import Path
 from typing import List
 
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
+from chromadb.config import Settings
 from langchain_core.documents import Document
 
 
@@ -34,10 +35,12 @@ def _collection_name() -> str:
 
 def get_vectorstore() -> Chroma:
     embeddings = OpenAIEmbeddings(model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-small"))
+    client_settings = Settings(anonymized_telemetry=False)
     return Chroma(
         embedding_function=embeddings,
         persist_directory=str(_persist_dir()),
         collection_name=_collection_name(),
+        client_settings=client_settings,
     )
 
 

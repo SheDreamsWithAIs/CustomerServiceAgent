@@ -1,0 +1,1 @@
+This is a place to store scripts for the user to run for convenience while developing. If you create useful scripts that get used multiple times, consider storing them here. However, there is no need to keep them in context. THese are for the user rather than the agent.

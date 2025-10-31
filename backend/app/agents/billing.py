@@ -11,6 +11,8 @@ import json
 import re
 
 from langchain.agents import create_agent
+from langgraph.checkpoint.memory import InMemorySaver
+from app.middleware.common import get_default_middleware
 
 from app.tools.search_documents import search_documents
 from app.tools.billing_accounts import get_account_info
@@ -30,11 +32,13 @@ def get_billing_agent():
         tools=[get_account_info, search_documents],
         system_prompt=system_prompt,
         name="billing_agent",
+        middleware=get_default_middleware(),
+        checkpointer=InMemorySaver(),
     )
     return agent
 
 
-def invoke_billing_agent(user_message: str, user_selector: str | None = None) -> str:
+def invoke_billing_agent(user_message: str, user_selector: str | None = None, thread_id: str | None = None) -> str:
     """Invoke billing agent. If user_selector is provided, include a hint to call get_account_info."""
     agent = get_billing_agent()
     content = user_message
@@ -46,11 +50,10 @@ def invoke_billing_agent(user_message: str, user_selector: str | None = None) ->
             content = m.group(2)
     if user_selector:
         content = f"[user_selector={user_selector}] {content}"
-    result: Dict[str, Any] = agent.invoke({
-        "messages": [
-            {"role": "user", "content": content}
-        ]
-    })
+    result: Dict[str, Any] = agent.invoke(
+        {"messages": [{"role": "user", "content": content}]},
+        config={"configurable": {"thread_id": thread_id or "default"}},
+    )
     if isinstance(result, dict):
         messages = result.get("messages", [])
         if messages:

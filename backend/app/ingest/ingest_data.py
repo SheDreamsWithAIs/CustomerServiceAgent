@@ -20,7 +20,8 @@ from typing import List
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
+from chromadb.config import Settings
 
 
 def _repo_root() -> Path:
@@ -70,11 +71,13 @@ def split_documents(documents: List) -> List:
 
 def build_vectorstore(chunks: List) -> Chroma:
     embeddings = OpenAIEmbeddings(model=os.getenv("EMBEDDING_MODEL", "text-embedding-3-small"))
+    client_settings = Settings(anonymized_telemetry=False)
     vs = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
         persist_directory=str(_persist_dir()),
         collection_name=_collection_name(),
+        client_settings=client_settings,
     )
     vs.persist()
     return vs
@@ -97,8 +100,12 @@ def main() -> None:
     chunks = split_documents(documents)
     print(f"Loaded {len(documents)} docs → {len(chunks)} chunks. Building vectorstore...")
     vs = build_vectorstore(chunks)
-    count = vs._collection.count() if hasattr(vs, "_collection") else "unknown"
-    print(f"Chroma persisted at: {str(_persist_dir())}")
+    # langchain_chroma persists automatically when using persist_directory
+    try:
+        count = vs._collection.count()  # type: ignore[attr-defined]
+    except Exception:
+        count = "unknown"
+    print(f"Chroma directory: {str(_persist_dir())}")
     print(f"Collection: {_collection_name()} | Records: {count}")
 
 

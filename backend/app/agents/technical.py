@@ -10,6 +10,8 @@ from typing import Any, Dict, List
 import logging
 
 from langchain.agents import create_agent
+from langgraph.checkpoint.memory import InMemorySaver
+from app.middleware.common import get_default_middleware
 
 from app.tools.search_documents import search_documents
 
@@ -27,11 +29,13 @@ def get_technical_support_agent():
         tools=[search_documents],
         system_prompt=system_prompt,
         name="technical_support_agent",
+        middleware=get_default_middleware(),
+        checkpointer=InMemorySaver(),
     )
     return agent
 
 
-def invoke_technical_agent(user_message: str) -> str:
+def invoke_technical_agent(user_message: str, thread_id: str | None = None) -> str:
     """Invoke the technical support agent and return final assistant text.
 
     Exceptions are logged and re-raised so the API can return HTTP 500.
@@ -39,11 +43,10 @@ def invoke_technical_agent(user_message: str) -> str:
     logger = logging.getLogger("app.agents.technical")
     agent = get_technical_support_agent()
     try:
-        result: Any = agent.invoke({
-            "messages": [
-                {"role": "user", "content": user_message}
-            ]
-        })
+        result: Any = agent.invoke(
+            {"messages": [{"role": "user", "content": user_message}]},
+            config={"configurable": {"thread_id": thread_id or "default"}},
+        )
     except Exception as exc:
         logger.exception("Technical agent invocation failed")
         raise

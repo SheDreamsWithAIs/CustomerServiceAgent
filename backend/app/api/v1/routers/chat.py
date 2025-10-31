@@ -55,15 +55,15 @@ def chat(request: ChatRequest, mode: str | None = Query(default=None, descriptio
     try:
         # Normalize mode aliases
         if mode in {"tech_support", "technical", "tech"}:
-            answer = invoke_technical_agent(request.message)
+            answer = invoke_technical_agent(request.message, thread_id=request.thread_id)
             return ChatResponse(message=answer, route="tech_support")
         if mode == "policy":
-            answer = invoke_policy_agent(request.message)
+            answer = invoke_policy_agent(request.message, thread_id=request.thread_id)
             return ChatResponse(message=answer, route="policy")
         if mode == "billing":
             # Pass user_id if available as selector hint for personalization
             selector = request.user_id or None
-            answer = invoke_billing_agent(request.message, user_selector=selector)
+            answer = invoke_billing_agent(request.message, user_selector=selector, thread_id=request.thread_id)
 
             billing_details = None
             if selector:
@@ -93,7 +93,7 @@ def chat(request: ChatRequest, mode: str | None = Query(default=None, descriptio
         content = request.message
         if request.user_id:
             content = f"[user_selector={request.user_id}] {content}"
-        answer = invoke_supervisor(content)
+        answer = invoke_supervisor(content, thread_id=request.thread_id)
         return ChatResponse(message=answer, route="supervisor")
     except Exception as exc:
         # Provide limited error details unless DEBUG is enabled

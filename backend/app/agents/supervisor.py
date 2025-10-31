@@ -10,6 +10,8 @@ from typing import Any, Dict
 
 from langchain.agents import create_agent
 from langchain_core.tools import tool
+from langgraph.checkpoint.memory import InMemorySaver
+from app.middleware.common import get_default_middleware
 
 from app.agents.technical import invoke_technical_agent
 from app.agents.policy import invoke_policy_agent
@@ -42,7 +44,7 @@ def get_supervisor_agent():
         "2) If the question is about app usage, UI navigation (e.g., 'Settings > Privacy'), troubleshooting, errors, or APIs, choose tech_support.\n"
         "3) If the topic is billing/account (plan, invoices, payments, refunds), choose billing_answer.\n"
         "Ambiguous cases: prefer policy when the user asks about 'policy/policies/terms/compliance', even if phrased as 'where can I find'.\n"
-        "Personalization: if the user message contains [user_selector=...], pass it through unchanged to billing_answer.\n"
+        "Personalization (CRITICAL): If the user message contains [user_selector=...], you MUST include that exact prefix AT THE BEGINNING of the billing_answer tool input, unchanged. Do NOT paraphrase or drop it.\n"
         "Return only the final answer to the user, not tool traces.\n\n"
         "Examples:\n"
         "- 'Where can I find data privacy settings?' -> tech_support\n"
@@ -55,17 +57,18 @@ def get_supervisor_agent():
         tools=[tech_support, policy_answer, billing_answer],
         system_prompt=system_prompt,
         name="supervisor",
+        middleware=get_default_middleware(),
+        checkpointer=InMemorySaver(),
     )
     return agent
 
 
-def invoke_supervisor(user_message: str) -> str:
+def invoke_supervisor(user_message: str, thread_id: str | None = None) -> str:
     agent = get_supervisor_agent()
-    result: Dict[str, Any] = agent.invoke({
-        "messages": [
-            {"role": "user", "content": user_message}
-        ]
-    })
+    result: Dict[str, Any] = agent.invoke(
+        {"messages": [{"role": "user", "content": user_message}]},
+        config={"configurable": {"thread_id": thread_id or "default"}},
+    )
     if isinstance(result, dict) and "messages" in result:
         messages = result.get("messages", [])
         if messages:
