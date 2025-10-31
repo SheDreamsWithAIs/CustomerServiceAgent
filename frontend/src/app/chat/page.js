@@ -51,6 +51,18 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamingMessage]);
 
+  function formatAssistantText(text, route) {
+    if (!text) return text;
+    let t = text;
+    // Insert newlines before Markdown bullets like "- **Field**" when jammed together
+    t = t.replace(/:\s*-\s+\*\*/g, ":\n- **");
+    t = t.replace(/\)\s*-\s+\*\*/g, ")\n- **");
+    t = t.replace(/([^\n])-\s+\*\*/g, (m, p1) => `${p1}\n- **`);
+    // Compact excessive blank lines
+    t = t.replace(/\n{3,}/g, "\n\n");
+    return t.trim();
+  }
+
   async function sendMessage(message) {
     if (!message.trim() || isLoading) return;
 
@@ -103,7 +115,7 @@ export default function ChatPage() {
       const agentFromRoute = res?.route || "orchestrator";
       const aiResponse = {
         id: Date.now() + 1,
-        content: responseText,
+        content: formatAssistantText(responseText, res?.route),
         sender: "ai",
         timestamp: new Date().toLocaleTimeString(),
         agentType: agentFromRoute === "tech_support" ? "technical" : agentFromRoute,
