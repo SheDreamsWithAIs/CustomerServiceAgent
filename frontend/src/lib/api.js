@@ -50,7 +50,7 @@ export async function chatStream({ message, userId, threadId, mode, onChunk }) {
       const text = decoder.decode(value, { stream: true });
       // Parse SSE lines, accumulate only data: ...
       for (const line of text.split(/\r?\n/)) {
-        const m = line.match(/^data:\s*(.*)$/);
+        const m = line.match(/^data:(.*)$/);
         if (m) {
           const data = m[1];
           if (data === "[DONE]") return;

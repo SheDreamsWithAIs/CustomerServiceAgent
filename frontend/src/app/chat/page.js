@@ -42,7 +42,7 @@ export default function ChatPage() {
   const [streamingMessage, setStreamingMessage] = useState("");
   const [streamingAgentType, setStreamingAgentType] = useState("brand");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [threadId] = useState(() => `web_${Date.now()}`);
+  const [threadId, setThreadId] = useState(() => `web_${Date.now()}`);
   const userId = "user_123"; // simple default for personalization
 
   const messagesEndRef = useRef(null);
@@ -87,16 +87,17 @@ export default function ChatPage() {
       const res = await apiChat({ message, userId, threadId });
       let responseText = streamed || res?.message || "";
 
-      // Append structured billing details if present
-      if (res?.billing) {
+      // Append a concise summary for billing only (avoid duplicates)
+      if (res?.route === "billing" && res?.billing) {
         const b = res.billing;
-        const lines = [];
-        if (b.plan) lines.push(`Plan: ${b.plan}`);
-        if (b.balance_due != null && b.currency) lines.push(`Balance: ${b.balance_due} ${b.currency}`);
-        if (b.last_invoice_id) lines.push(`Last Invoice: ${b.last_invoice_id}`);
-        if (b.open_tickets != null) lines.push(`Open Tickets: ${b.open_tickets}`);
-        if (b.policy_summary) lines.push(`Policy: ${b.policy_summary}`);
-        if (lines.length) responseText += `\n\n${lines.join("\n")}`;
+        const alreadyHasSummary = /Plan:\s|Balance\s|User ID:|Email:/.test(responseText);
+        if (!alreadyHasSummary) {
+          const parts = [];
+          if (b.plan) parts.push(`Plan ${b.plan}`);
+          if (b.balance_due != null && b.currency) parts.push(`Balance ${b.balance_due} ${b.currency}`);
+          if (b.last_invoice_id) parts.push(`Invoice ${b.last_invoice_id}`);
+          if (parts.length) responseText += `\n\n${parts.join(" • ")}`;
+        }
       }
 
       const agentFromRoute = res?.route || "orchestrator";
@@ -122,6 +123,24 @@ export default function ChatPage() {
       setStreamingMessage("");
       setIsLoading(false);
     }
+  }
+
+  function startNewChat() {
+    setIsLoading(false);
+    setStreamingMessage("");
+    setStreamingAgentType("brand");
+    setInputMessage("");
+    setThreadId(`web_${Date.now()}`);
+    setMessages([
+      {
+        id: Date.now(),
+        content:
+          "Welcome to OfficeLifeline! Ask anything about billing, technical issues, or policies and I’ll route it to the right specialist.",
+        sender: "ai",
+        timestamp: "",
+        agentType: "brand",
+      },
+    ]);
   }
 
   function AgentBadge({ agentType }) {
@@ -215,6 +234,13 @@ export default function ChatPage() {
                 className="px-6 py-4 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white rounded-xl hover:from-cyan-600 hover:via-purple-600 hover:to-pink-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition shadow-lg hover:shadow-xl font-bold"
               >
                 {isLoading ? "Thinking…" : "Send"}
+              </button>
+              <button
+                onClick={startNewChat}
+                disabled={isLoading}
+                className="px-4 py-4 bg-white border-2 border-gray-300 text-gray-800 rounded-xl hover:bg-gray-50 transition shadow-sm font-semibold"
+              >
+                New Chat
               </button>
             </div>
             <div className="mt-3 text-xs text-gray-500 text-center">Press Enter to submit • Connected to backend API</div>
