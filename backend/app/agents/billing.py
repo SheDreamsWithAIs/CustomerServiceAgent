@@ -8,6 +8,7 @@ Last Verified: 2025-10-30
 
 from typing import Any, Dict
 import json
+import re
 
 from langchain.agents import create_agent
 
@@ -37,8 +38,14 @@ def invoke_billing_agent(user_message: str, user_selector: str | None = None) ->
     """Invoke billing agent. If user_selector is provided, include a hint to call get_account_info."""
     agent = get_billing_agent()
     content = user_message
+    # If selector not explicitly provided, try to parse a prefix like [user_selector=...] from the message.
+    if not user_selector:
+        m = re.match(r"\[user_selector=([^\]]+)\]\s*(.*)", user_message)
+        if m:
+            user_selector = m.group(1).strip()
+            content = m.group(2)
     if user_selector:
-        content = f"[user_selector={user_selector}] {user_message}"
+        content = f"[user_selector={user_selector}] {content}"
     result: Dict[str, Any] = agent.invoke({
         "messages": [
             {"role": "user", "content": content}

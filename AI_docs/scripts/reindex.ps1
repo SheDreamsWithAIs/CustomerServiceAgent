@@ -6,8 +6,9 @@
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot | Split-Path -Parent
-$chromaDir = Join-Path $repoRoot 'backend' '.chroma'
-$sourceDir = Join-Path $repoRoot 'backend' 'documents_for_agents'
+$backendDir = Join-Path $repoRoot 'backend'
+$chromaDir = Join-Path $backendDir '.chroma'
+$sourceDir = Join-Path $backendDir 'documents_for_agents'
 
 Write-Host "Repo: $repoRoot"
 Write-Host "Chroma dir: $chromaDir"
@@ -29,7 +30,7 @@ $python = Get-Command python -ErrorAction SilentlyContinue
 if (-not $python) { throw "Python not found on PATH." }
 
 # Run ingestion
-Push-Location (Join-Path $repoRoot 'backend')
+Push-Location $backendDir
 try {
   python -m app.ingest.ingest_data --source .\documents_for_agents
 } finally {

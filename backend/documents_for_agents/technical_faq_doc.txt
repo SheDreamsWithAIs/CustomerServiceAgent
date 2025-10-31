@@ -1,0 +1,26 @@
+Title: OfficeLifeline Technical FAQ (Sample)
+
+Where can I find data privacy settings?
+- Navigate to Settings > Privacy in the top-right user menu. From there you can:
+  - Export your data
+  - Delete your account
+  - Opt-in/out of analytics
+  - Manage cookie preferences
+
+How do I reset my password?
+- Go to the login screen and click “Forgot password”. You’ll receive a reset link via email.
+
+Why am I seeing a 401 Unauthorized error?
+- Your token may be expired. Log out and back in, or refresh your API token in Settings > Developer.
+
+How do I report a bug?
+- Open a ticket at support@officelifeline.example with steps to reproduce, screenshots, and your browser version.
+
+Rate limits for the API
+- Default: 60 requests/minute per user. Enterprise plans can request higher limits via support.
+
+Data retention
+- Logs are retained for 30 days by default (Enterprise plans configurable up to 365 days).
+
+Deployment troubleshooting
+- If deploys fail, verify environment variables and check the build logs for missing secrets or incorrect API endpoints.
