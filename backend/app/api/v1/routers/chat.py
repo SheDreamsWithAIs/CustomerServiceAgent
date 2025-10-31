@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query
 from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 import asyncio
+import logging
 
 from app.schemas.chat import ChatRequest, ChatResponse, BillingDetails
 from app.agents.technical import invoke_technical_agent
@@ -14,6 +15,7 @@ from app.retrieval.retriever import similarity_search
 
 
 router = APIRouter(tags=["chat"], prefix="/chat")
+logger = logging.getLogger("app.api.chat")
 
 
 def _classify_intent(message: str) -> str:
@@ -72,9 +74,11 @@ def chat(request: ChatRequest, mode: str | None = Query(default=None, descriptio
         # Normalize mode aliases
         if mode in {"tech_support", "technical", "tech"}:
             answer = invoke_technical_agent(request.message, thread_id=request.thread_id)
+            logger.info("route=tech_support mode=%s thread=%s", mode, request.thread_id)
             return ChatResponse(message=answer, route="tech_support")
         if mode == "policy":
             answer = invoke_policy_agent(request.message, thread_id=request.thread_id)
+            logger.info("route=policy mode=%s thread=%s", mode, request.thread_id)
             return ChatResponse(message=answer, route="policy")
         if mode == "billing":
             # Pass user_id if available as selector hint for personalization
@@ -104,6 +108,7 @@ def chat(request: ChatRequest, mode: str | None = Query(default=None, descriptio
                         policy_summary=snippet,
                     )
 
+            logger.info("route=billing mode=%s thread=%s", mode, request.thread_id)
             return ChatResponse(message=answer, route="billing", error=None).model_copy(update={"billing": billing_details})
         # Deterministic billing guard: if user_id is present and billing-like terms appear, route to billing
         m = (request.message or "").lower()
@@ -134,6 +139,7 @@ def chat(request: ChatRequest, mode: str | None = Query(default=None, descriptio
                     open_tickets=acct.get("open_tickets"),
                     policy_summary=snippet,
                 )
+            logger.info("route=billing(guard) thread=%s", request.thread_id)
             return ChatResponse(message=answer, route="billing", error=None).model_copy(update={"billing": billing_details})
 
         # Default: supervisor-only routing (heuristics disabled)
@@ -141,6 +147,7 @@ def chat(request: ChatRequest, mode: str | None = Query(default=None, descriptio
         if request.user_id:
             content = f"[user_selector={request.user_id}] {content}"
         answer = invoke_supervisor(content, thread_id=request.thread_id)
+        logger.info("route=supervisor thread=%s", request.thread_id)
         return ChatResponse(message=answer, route="supervisor")
     except Exception as exc:
         # Provide limited error details unless DEBUG is enabled
