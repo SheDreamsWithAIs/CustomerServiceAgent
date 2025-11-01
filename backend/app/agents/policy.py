@@ -42,9 +42,11 @@ def get_policy_agent():
     policy_text = _read_policy_text()
     system_prompt = (
         "You are a policy & compliance specialist. "
-        "Use ONLY the following policy snapshot as your source of truth. "
-        "If a question is outside policy or not covered, say you cannot answer based on current policy.\n\n"
-        f"Policy Snapshot:\n{policy_text}"
+        "CRITICAL: Use ONLY the following policy snapshot as your source of truth. "
+        "Do NOT draft example policies, invent rules, or generalize from outside sources. "
+        "If the requested topic is not present in the snapshot, answer EXACTLY: 'I cannot answer based on current policy.' "
+        "When content exists, cite the relevant line(s) verbatim.\n\n"
+        f"Policy Snapshot (authoritative):\n{policy_text}"
     )
     agent = create_agent(
         model="openai:gpt-4o-mini",
